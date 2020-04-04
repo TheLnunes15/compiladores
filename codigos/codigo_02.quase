@@ -1,0 +1,32 @@
+classe _Primo { identificando numeros primos }
+começa 
+	função int num_divs(int n, int i)
+	começa
+		 se (n == 1)
+		 então 1
+		 senão se (i * i < n)
+		       então se (n % i == 0)
+		       	     então 2 + num_divs(n, i + 1)
+			     senão num_divs(n, i + 1)
+		       senão se (i * i == n)
+		       	     então 3
+			     senão 2
+    termina
+
+	função bool e_primo(int n)
+	começa
+		se (num_divs(n, 2) == 2) então true senão false
+	termina
+
+	=> procedimento Main() 
+	começa
+	   	objeto _IO io;
+	   	var int n;
+
+		n = io.read();
+		enquanto (0 < n) começa
+		      io.print(e_primo(n));
+		      n = io.read();
+		termina
+	termina
+termina

@@ -1,0 +1,21 @@
+classe _Calculadora
+começa 
+	var int num;
+
+	{ retorna a soma de dois numeros inteiros }
+	função int soma(int privalor, int segvalor)
+	começa		
+		privalor + segvalor
+	termina
+
+	{ retorna a multiplicacao de dois numeros inteiros }
+	função int mult(int privalor, int segvalor)
+	começa		
+		privalor * segvalor
+	termina
+
+	função bool iguais(int privalor, int segvalor)
+	começa		
+		privalor == segvalor
+	termina
+termina

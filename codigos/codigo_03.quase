@@ -1,0 +1,90 @@
+classe _Chevette filha da classe _Car & classe _Car filha da classe _Automobile;
+
+classe _Car
+começa
+	var real speed, speed_max;	
+	var bool on;
+	objeto _Cambio cambio;	
+
+	=> procedimento enable()
+		on = true;
+
+	=> procedimento disable()
+		on = false;
+
+	=> procedimento accelerate()
+	começa
+		se (on)
+			se (speed < speed_max) então speed = speed + 1;
+	termina
+
+	=> procedimento cima_cambio()
+		se (cambio.get_cambio_atual < cambio.get_cambio_max)
+			cambio.set_cambio_atual(cambio.get_cambio_atual + 1);
+	
+    => procedimento baixo_cambio()
+		se (!cambio.get_cambio_atual < 1)
+			cambio.set_cambio_atual(cambio.get_cambio_atual - 1);
+	
+termina
+
+
+classe _Automobile
+começa
+	var real speed, speed_max;
+	var bool on := (555 == 666); { resultando false }
+
+	=> procedimento enable()
+		on = true;
+
+	=> procedimento disable()
+		on = false;
+
+	=> procedimento accelerate()
+	começa
+		se (on)
+			se (speed < speed_max)
+				speed = speed + 1;
+	termina
+
+termina
+
+
+classe _Chevette
+começa
+	objeto _Cambio cambio_auto;
+	var real speed, speed_max;	
+	var bool on := false e true; { resultando false }
+
+	=> procedimento enable()
+		on = true;
+
+	=> procedimento disable()
+		on = false;
+
+	=> procedimento cima_cambio()
+		se (cambio_auto.get_cambio_atual < cambio_auto.get_cambio_max)
+			cambio_auto.set_cambio_atual(1);
+
+	=> procedimento baixo_cambio()
+		se (!cambio_auto.get_cambio_atual < 1)
+			cambio_auto.set_cambio_atual(-1);
+termina
+
+
+classe _Cambio
+começa
+	var int cambio_max, cambio_atual;
+
+	=> procedimento set_cambio_atual(int valor)
+		  cambio_atual = valor;
+
+	=> procedimento set_cambio_max(int valor)
+		  cambio_max = valor;
+
+	   função int get_cambio_atual()
+		  cambio_atual
+
+	   função int get_cambio_max()
+		  cambio_max  
+termina

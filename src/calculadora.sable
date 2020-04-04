@@ -1,0 +1,318 @@
+Package calculadora;
+
+Helpers
+    
+	/* Caracteres */
+
+    charac = ['a'..'z']|['A'..'Z']|'Ç'|'ç'|'Á'|'É'|'Í'|'Ó'|'Ú'|'á'|'é'|'í'|'ó'|'ú'|'Ã'|'Õ'|'ã'|'õ'|'À'|'à'|'Â'|'Ê'|'Ô'|'â'|'ê'|'ô';
+    quase_tudo = [0..122] | 124 | [126..255]; // Todos os caracteres menos '{' e '}', para saber onde abrir e fechar o comentário
+	branco = (9 | 10 | 13 | 32);
+	
+	/* Numeros */
+
+    digito = ['0'..'9'];
+    bin = '0'|'1';
+    binario = '0b' bin+;
+    decimal = digito+;
+    real_cientifico1 = ['1'..'9']+ ('E'|'e') '-'? digito+;
+    real_cientifico2 = ['1'..'9']+ digito+ '^' '-'? digito+;
+	real_decimal = digito+ '.' digito+;
+
+Tokens	
+	
+	/* Palavras reservadas */
+
+    classe = 'classe';
+    filha_da_classe = 'filha da classe';
+    comeca = 'começa';
+    termina = 'termina';
+    objeto = 'objeto';
+    variavel = 'var';
+    constante = 'cons';
+    inteiro = 'int';
+    bool = 'bool';
+    real = 'real';
+    inicia_procdm = '=>';
+    procedimento = 'procedimento';
+    par_esquerdo = '(';
+    par_direito = ')';
+    funcao = 'função';
+    se = 'se';
+    senao = 'senão';
+    entao = 'então';
+    enquanto = 'enquanto';
+    verdadeiro = 'true';
+    falso = 'false';
+    e = 'e';
+    ou = 'ou';
+
+
+	/* Caracteres reservados */
+
+    e_comercial = '&';
+    ponto_virgula = ';';
+    virgula = ',';	
+    inicializacao = ':=';
+    atribuicao = '=';
+    menos = '-';
+    mais = '+';
+    mult = '*';
+    div = '/';
+    mod = '%';
+    comp = '==';
+    menor = '<';
+    negacao = '!';
+    ponto = '.';
+
+
+	/* Tipos */
+
+	num_inteiro = binario | decimal;
+	num_real = real_cientifico1 | real_cientifico2 | real_decimal;
+	
+	identificador = charac (charac | '_')*;
+    cl_identificador = '_' (charac | '_')*;
+
+	/* Outros */
+
+    coment = '{' quase_tudo* '}';
+    vazio = branco+;
+
+
+Ignored Tokens
+    coment, vazio;
+
+
+Productions
+
+	/************************ PROGRAMA, FAMILIA E RELACAO ************************/
+
+    program {-> programa} = [esq]:familia? [dir]:classes {-> New programa.programa(esq.familia, [dir.def_classe])};
+
+    classes {-> def_classe*} = {classes} [esq]:def_classe [dir]:classes {-> [esq.def_classe, dir.def_classe]}
+	  |{classe} def_classe {-> [def_classe]}
+		;
+
+    familia {-> familia} = {familia} relacionamentos ponto_virgula {-> New familia.relacionamentos([relacionamentos.relacionamento])};
+    
+    relacionamentos {-> relacionamento*} = {relacionamentos} [esq]:relacionamento e_comercial [dir]:relacionamentos {-> [esq.relacionamento, dir.relacionamento]}
+	  |{relacionamento} relacionamento {-> [relacionamento]}
+		;
+    
+    relacionamento {-> relacionamento} = {relacionamento} classe cl_identificador filha {-> New relacionamento.relacionamento(filha)};
+    
+    filha = {filha} filha_da_classe cl_identificador;
+
+    def_classe {-> def_classe} = {def_classe} classe cl_identificador comeca [esq]:atributos? [dir]:metodos? termina {-> New def_classe.def_classe([esq.dec], [dir.declara])};
+
+
+	/************************ DECLARACOES, FUNCOES E PROCEDIMENTOS ************************/
+
+    atributos {-> dec*} = {atributos} [esq]:dec [dir]:atributos {-> [esq.dec, dir.dec]} |
+      {dec} dec {-> [dec]};
+    
+    metodos {-> declara*} = {metodos} [esq]:declara [dir]:metodos {-> [esq.declara, dir.declara]} |
+      {dec} declara {-> [declara]};
+
+    dec {-> dec} = {obj} dec_obj {-> dec_obj.dec} 
+      |{var} dec_var {-> dec_var.dec}
+      |{cons} dec_cons {-> dec_cons.dec}
+      ;
+    
+    declaracoes {-> dec*} = {decs} [esq]:dec [dir]:declaracoes {-> [esq.dec, dir.dec]}
+      |{dec} dec {-> [dec]}
+      ;
+    
+    constantes {-> dec*} = {constantes} [esq]:dec_cons [dir]:constantes {-> [esq.dec, dir.dec]}
+      |{dec_cons} dec_cons {-> [dec_cons.dec]}
+      ;
+    
+    dec_obj {-> dec} = {dec_obj} objeto cl_identificador identificacoes ponto_virgula {-> New dec.declara_obj([identificacoes.identifica])};
+    
+    dec_var {-> dec} = {dec_var} variavel [esq]:tipo [dir]:identificacoes ponto_virgula {-> New dec.declara_variavel(esq.tipo, [dir.identifica])};
+    
+    dec_cons {-> dec} =
+      {dec_cons} constante [esq]:tipo_primitivo [dir]:inicializacoes+ ponto_virgula {-> New dec.declara_constante(esq.tipo_primitivo, [dir.inicializar])};
+    
+    identificacoes {-> identifica*} = {identificacoes} [esq]:identifica virgula [dir]:identificacoes {-> [esq.identifica, dir.identifica]}
+	  |{id} identifica {-> [identifica]}
+      ;
+    
+    inicializacoes {-> inicializar*} = {inicializacoes} [esq]:inicializar virgula [dir]:inicializacoes {-> [esq.inicializar, dir.inicializar]}
+	  |{inicializacao} inicializar {-> [inicializar]}
+      ;
+    
+    identifica = {identificador} identificador;
+    
+    inicializar {-> inicializar} = {inicializar} identificador inicializacao exp {-> New inicializar.init(exp)};
+
+    declara {-> declara} = {proc} dec_procedimento {-> dec_procedimento.declara}
+      |{func} dec_funcao {-> dec_funcao.declara}
+      ;
+    
+    dec_procedimento {-> declara} = {dec_procedimento} inicia_procdm? procedimento identificador par_esquerdo [esq]:parametros? par_direito [dir]:comando {-> New declara.dec_procedimento([esq.parametro], dir.comando)};
+    
+    dec_funcao {-> declara} = {dec_funcao} funcao [esq]:tipo identificador par_esquerdo [mid]:parametros? par_direito comeca declaracoes? [dir]:exp termina{-> New declara.dec_funcao(esq.tipo, [mid.parametro], dir.exp)};
+    
+    parametros {-> parametro*} = {parametros} [esq]:parametro virgula [dir]:parametros {-> [esq.parametro, dir.parametro]}
+      |{parametro} parametro {-> [parametro]}
+      ;
+    
+    parametro = {parametro} tipo identificador;
+
+
+	/************************ CLASSES ************************/
+
+    tipo {-> tipo} = {classe} tipo_classe {-> New tipo.tipo_classe(tipo_classe)}
+	  |{primitivo} tipo_primitivo {-> New tipo.tipo_primtivo(tipo_primitivo)}
+      ;
+    
+    tipo_classe = {tipo_classe} cl_identificador;
+    
+    tipo_primitivo = {int} inteiro
+      |{bool} bool
+      |{real} real
+      ;
+
+
+	/************************ COMANDOS, CHAMADAS E EXPRESSOES ************************/
+
+    comando {-> comando} = {comando_se} se par_esquerdo [esq]:exp par_direito [dir]:entao_parte {-> New comando.se(esq.exp, dir.exp)}
+      |{comando_enquanto} enquanto par_esquerdo [esq]:exp par_direito [dir]:comando {-> New comando.comando_enquanto(esq.exp, dir.comando)}
+      |{comando_atrib} identificador atribuicao exp ponto_virgula {-> New comando.comando_atrib(exp)}
+      |{comando_atributo} object? atributo ponto_virgula {-> New comando.atributo(atributo)}
+      |{comando_bloco} bloco {-> bloco.comando}
+      ;        
+    
+    comandos {-> comando*} = {comandos} [esq]:comando [dir]:comandos {-> [esq.comando, dir.comando]}
+      |{comando} comando {-> [comando]}
+      ;
+
+    bloco {-> comando} = {bloco} comeca [esq]:declaracoes? [dir]:comandos? termina {-> New comando.bloco([esq.dec], [dir.comando])};
+
+    exp {-> exp} = {comando} se par_esquerdo [esq]:exp par_direito [dir]:entao_parte {-> New exp.se(esq.exp, dir.exp)}
+      |{enquanto_exp} enquanto par_esquerdo [esq]:exp par_direito [dir]:comando {-> New exp.enquanto_exp(esq.exp, dir.comando)}
+      |{negativo} menos exp {-> New exp.num_negativo(exp)}
+      |{soma} [esq]:termo mais [dir]:exp {-> New exp.mais(esq.exp, dir.exp)}
+      |{subtracao} [esq]:termo menos [dir]:exp {-> New exp.menos(esq.exp, dir.exp)}
+      |{mult} [esq]:termo mult [dir]:exp {-> New exp.mult(esq.exp, dir.exp)}
+      |{div} [esq]:termo div [dir]:exp {-> New exp.div(esq.exp, dir.exp)}
+      |{mod} [esq]:termo mod [dir]:exp {-> New exp.mod(esq.exp, dir.exp)}
+      |{comparacao} [esq]:termo comp [dir]:exp {-> New exp.comp(esq.exp, dir.exp)}
+      |{menor_que} [esq]:termo menor [dir]:exp {-> New exp.menor(esq.exp, dir.exp)}
+      |{and} termo e exp {-> New exp.and(exp)}
+      |{or} termo ou exp {-> New exp.or(exp)}
+      |{bloco_delimit} bloco_delimit {-> bloco_delimit.exp}
+      |{termo} termo {-> termo.exp}
+      ;
+    
+    entao_parte {-> exp} = {cont_cond} entao [esq]:exp [dir]:senao_parte {-> New exp.entao(esq.exp, dir.exp)};
+    
+    senao_parte {-> exp} = {fim_cond} senao exp {-> New exp.senao(exp)};
+
+    termo {-> exp} = {numero} numero {-> New exp.num(numero)}
+      |{booleano} booleano {-> New exp.num_bool(booleano)}
+      |{id_atributo} id_atributo {-> id_atributo.exp}
+      |{par} par_esquerdo exp par_direito {-> exp.exp}
+      ;
+
+    numero = {inteiro} num_inteiro
+      |{real} num_real
+      ;    
+    
+    booleano = {verdadeiro} verdadeiro
+      |{falso} falso
+      ;
+
+    id_atributo {-> exp} = {id_atrib} object? identificador {-> New exp.id_atrib(object)}
+      |{id_atributo} [esq]:object? [dir]:atributo {-> New exp.id_atributo(esq.object, dir.atributo)};
+    
+    object = {object} identificador ponto;
+
+    bloco_delimit {-> exp} = {bloco_delimit} comeca [esq]:constantes? [dir]:exp termina {-> New exp.bloco_delimit([esq.dec], dir.exp)};
+
+    atributo {-> atributo} = {atributo} identificador par_esquerdo expre? par_direito {-> New atributo.atributo([expre.exp])};
+    
+    expre {-> exp*} = {expre} [esq]:exp virgula [dir]:expre {-> [esq.exp, dir.exp]}
+      |{exp} exp {-> [exp]}
+      ;
+
+
+Abstract Syntax Tree
+
+    programa = {programa} [esq]:familia? [dir]:def_classe+;
+
+    familia = {relacionamentos} relacionamento+;
+    
+    relacionamento = {relacionamento} filha;
+    
+    filha = {filha} filha_da_classe cl_identificador;
+
+    def_classe = {def_classe} [esq]:dec* [dir]:declara*;
+    
+    identifica = {identificador} identificador;
+    
+    inicializar = {init} exp;
+    
+    dec = {declara_obj} identifica+
+      |{declara_variavel} [esq]:tipo [dir]:identifica+
+      |{declara_constante} [esq]:tipo_primitivo [dir]:inicializar+
+      ;
+
+    declara = {dec_procedimento} [esq]:parametro* [dir]:comando
+      |{dec_funcao} [esq]:tipo [mid]:parametro* [dir]:exp
+      ;
+    
+    parametro = {parametro} tipo identificador;
+
+    tipo = {tipo_classe} tipo_classe
+      |{tipo_primtivo} tipo_primitivo
+      ;
+    
+    tipo_classe = {tipo_classe} cl_identificador;
+    
+    tipo_primitivo = {int} inteiro 
+      |{bool} bool
+      |{real} real
+      ;
+
+    numero = {inteiro} num_inteiro
+      |{real} num_real
+      ;
+    
+    booleano = {verdadeiro} verdadeiro
+      |{falso} falso
+      ;
+
+    atributo = {atributo} exp*;
+
+    comando = {se} [esq]:exp [dir]:exp
+      |{comando} [esq]:exp [dir]:comando 
+      |{comando_enquanto} [esq]:exp [dir]:comando 
+      |{comando_atrib} exp 
+      |{atributo} atributo 
+      |{bloco} [esq]:dec* [dir]:comando* 
+      ;
+   
+    object = {object} identificador ponto;
+
+	exp = {se} [esq]:exp [dir]:exp
+      |{entao} [esq]:exp [dir]:exp 
+      |{senao} exp 
+      |{enquanto_exp} [esq]:exp [dir]:comando 
+      |{mais} [esq]:exp [dir]:exp 
+      |{menos} [esq]:exp [dir]:exp 
+      |{mult} [esq]:exp [dir]:exp 
+      |{div} [esq]:exp [dir]:exp 
+      |{mod} [esq]:exp [dir]:exp 
+      |{comp} [esq]:exp [dir]:exp 
+      |{menor} [esq]:exp [dir]:exp 
+      |{bloco_delimit} [esq]:dec* [dir]:exp 
+      |{num_negativo} exp 
+      |{and} exp 
+      |{or} exp 
+      |{id_atrib} object? 
+      |{id_atributo} [esq]:object? [dir]:atributo 
+      |{num} numero 
+      |{num_bool} booleano
+      ;
